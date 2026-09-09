@@ -1,0 +1,15 @@
+Status: WAITING FOR APPROVAL
+
+# Implementation Plan
+
+## Objective
+Add a one-click control while editing a task to clear both `date` and `time` fields (“Clear schedule”), so users can easily remove an existing due date/time and then save via the existing Update flow.
+
+Jira Story: 
+Jira URL: 
+
+## Files / Components
+Verified in repo:
+- `components/TaskForm.tsx` (edit UI: date/time inputs; submit button changes to “Update Task” when `isEditing`)
+- `App.tsx` (passes `isEditing` and `initialData`, handles `updateTask` to persist changes into state/localStorage)
+- `types.ts` (Task shape includes optional `date?: string; time?: string`)\n\n## Frontend Changes\n- In `components/TaskForm.tsx`, when `isEditing` is true, add a UI control labeled “Clear schedule”.\n- Clicking “Clear schedule” should set local component state for both `date` and `time` to empty strings (`''`).\n- Ensure the cleared state is persisted when the user clicks the existing “Update Task” submit button (no auto-save behavior is currently present in the form).\n\n## Data / Backend Changes\n- None. The app stores tasks in `localStorage` via `App.tsx` (`taskloom_data`). Clearing schedule will be represented by empty `date` and `time` values already supported by the current `Task` type.\n\n## Testing\nVerified existing tests directory:\n- `tests/scrum8-search-due-date-time.spec.ts` exists (covers due date/time behavior for search; details not changed in this plan).\n\nProposed test updates (plan-only):\n- Add/extend Playwright coverage to confirm that, in edit mode:\n  - “Clear schedule” empties both inputs.\n  - After clicking “Update Task”, the task no longer displays date/time (as rendered by existing UI) and no longer matches time/date search terms.\n\n## Implementation Steps\n1. Confirm current edit mode behavior in `TaskForm.tsx`:\n   - `initialData` populates `title`, `date`, `time` .\n   - Submit calls `onSubmit({ title: title.trim(), date, time })` .\n2. Add a “Clear schedule” button/control to `TaskForm.tsx` that renders only when `isEditing` is true.\n3. Implement the click handler to call `setDate('')` and `setTime('')`.\n4. Verify that submitting the form in edit mode calls `onSubmit` with empty `date`/`time` and that `App.tsx`’s `updateTask` merges those fields onto the task.\n5. Update/add Playwright test coverage in `tests/` to validate the end-to-end edit-and-clear flow.\n\n## Risks / Dependencies\n- Browser behavior/styling: native `input[type=date]` and `input[type=time]` clearing behavior varies; using controlled React state (already used) should keep UI consistent.\n- UX clarity: ensure the “Clear schedule” control is visually distinct from “Cancel” and does not imply immediate persistence (current persistence happens on “Update Task”).\n\nApproval:\n- Approve\n- Reject / Request Changes
