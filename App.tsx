@@ -42,12 +42,13 @@ const App: React.FC = () => {
     setStatPulse(p => p + 1);
   };
 
-  const deleteTask = (id: string) => {
+  const deleteTask = (id: string): boolean => {
     const confirmed = confirm('Are you sure you want to delete this task?');
-    if (!confirmed) return;
+    if (!confirmed) return false;
 
     setTasks(prev => prev.filter(t => t.id !== id));
     setStatPulse(p => p + 1);
+    return true;
   };
 
   const clearCompleted = () => {
@@ -204,6 +205,7 @@ const App: React.FC = () => {
             onSubmit={editingTask ? updateTask : addTask}
             initialData={editingTask || undefined}
             onCancel={editingTask ? () => setEditingTask(null) : undefined}
+            onDelete={editingTask ? deleteTask : undefined}
             isEditing={!!editingTask}
           />
         </section>
