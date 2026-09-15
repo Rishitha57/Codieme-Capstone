@@ -6,10 +6,11 @@ interface TaskFormProps {
   onSubmit: (taskData: Omit<Task, 'id' | 'completed' | 'createdAt'>) => void;
   initialData?: Task;
   onCancel?: () => void;
+  onDelete?: (id: string) => boolean;
   isEditing?: boolean;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, initialData, onCancel, isEditing }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, initialData, onCancel, onDelete, isEditing }) => {
   const [title, setTitle] = useState(initialData?.title || '');
   const [date, setDate] = useState(initialData?.date || '');
   const [time, setTime] = useState(initialData?.time || '');
@@ -37,8 +38,19 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, initialData, onCancel, is
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isEditing || !initialData || !onDelete) return;
+    if (e.key !== 'Backspace' || !(e.ctrlKey || e.metaKey)) return;
+
+    e.preventDefault();
+    const deleted = onDelete(initialData.id);
+    if (deleted) {
+      onCancel?.();
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in duration-500">
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-5 animate-in fade-in duration-500">
       <div className="space-y-4">
         <div className="relative">
           <input
