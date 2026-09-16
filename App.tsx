@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Task, TaskFilter } from './types';
 import TaskForm from './components/TaskForm';
 import TaskCard from './components/TaskCard';
@@ -13,10 +13,19 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [statPulse, setStatPulse] = useState(0);
+  const [deletedTask, setDeletedTask] = useState<Task | null>(null);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const UNDO_TIMEOUT_MS = 6000;
 
   useEffect(() => {
     localStorage.setItem('taskloom_data', JSON.stringify(tasks));
   }, [tasks]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    };
+  }, []);
 
   const addTask = (taskData: Omit<Task, 'id' | 'completed' | 'createdAt'>) => {
     const newTask: Task = {
@@ -46,7 +55,29 @@ const App: React.FC = () => {
     const confirmed = confirm('Are you sure you want to delete this task?');
     if (!confirmed) return;
 
+    const taskToDelete = tasks.find(t => t.id === id) || null;
     setTasks(prev => prev.filter(t => t.id !== id));
+    setStatPulse(p => p + 1);
+
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+    }
+    setDeletedTask(taskToDelete);
+    undoTimeoutRef.current = setTimeout(() => {
+      setDeletedTask(null);
+      undoTimeoutRef.current = null;
+    }, UNDO_TIMEOUT_MS);
+  };
+
+  const undoDelete = () => {
+    if (!deletedTask) return;
+
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+    setTasks(prev => [deletedTask, ...prev]);
+    setDeletedTask(null);
     setStatPulse(p => p + 1);
   };
 
@@ -247,6 +278,20 @@ const App: React.FC = () => {
         </div>
         <p className="text-slate-600 text-[10px] font-medium italic">"The way to get started is to quit talking and begin doing."</p>
       </footer>
+
+      {deletedTask && (
+        <div className="fixed bottom-6 inset-x-0 flex justify-center z-50 px-4">
+          <div className="glass-card px-6 py-4 rounded-2xl flex items-center gap-4 shadow-2xl">
+            <span className="text-white text-sm font-medium">Task deleted</span>
+            <button
+              onClick={undoDelete}
+              className="text-indigo-400 hover:text-indigo-300 text-xs font-black uppercase tracking-widest"
+            >
+              Undo
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
